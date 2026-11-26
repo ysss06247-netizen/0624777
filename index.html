@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>每日日記</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-title" content="每日日記">
+<meta name="theme-color" content="#fff2df">
+<style>
+body{margin:0;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none!important}
+
+/* 單欄日記；刻意固定暖色單一主題 */
+:root{--bg:#fff2df;--card:#fff;--fg:#1d2321;--sub:#55605c;--accent:#b8432a;--sun:#ffe08a;--line:#d9cbb4;color-scheme:light}
+body{background:var(--bg);color:var(--fg);font-family:-apple-system,'PingFang TC','Noto Sans TC',sans-serif;font-size:16px}
+main{max-width:640px;margin:0 auto;padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+section,.stack{display:flex;flex-direction:column;gap:14px}
+h1{font-size:26px;margin:0}
+.sub{color:var(--sub);font-size:14px}
+.card{background:var(--card);border-radius:24px;padding:16px}
+.warn{background:var(--sun);border-radius:16px;padding:12px 14px;font-size:14px}
+button,input,select,textarea{font:inherit;color:var(--fg)}
+button{min-height:48px;border-radius:24px;border:1px solid var(--line);background:var(--card);cursor:pointer;padding:6px 12px}
+button.main{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+button.sun{background:var(--sun);border:0;font-weight:700}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+input,select,textarea{box-sizing:border-box;min-height:44px;border:1px solid var(--line);border-radius:12px;background:var(--card);padding:8px 10px}
+textarea{width:100%;min-height:130px;resize:vertical}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+legend,.label{font-weight:700;padding:0;margin-bottom:8px}
+#moods{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+#moods button{border-radius:14px;padding:6px 0;font-size:14px;line-height:1.5}
+#moods button[aria-pressed=true]{background:var(--sun);border:2px solid var(--accent);font-weight:700}
+.task{display:grid;grid-template-columns:minmax(0,1fr) auto 44px;gap:8px;margin-bottom:8px}
+.task button{padding:0;border:0;background:transparent;font-size:22px}
+.row{display:flex;justify-content:space-between;gap:12px;padding:4px 0}
+.row span:first-child,.text{min-width:0;overflow-wrap:anywhere;white-space:pre-wrap}
+.row span:last-child{flex-shrink:0;color:var(--accent)}
+ nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-top:24px;position:sticky;bottom:env(safe-area-inset-bottom,0px);background:var(--bg);padding-block:10px}
+nav button[aria-current=page]{background:var(--sun);border:2px solid var(--accent);font-weight:700}
+.acts{display:grid;gap:8px;margin-top:10px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.top>div:first-child{min-width:0}
+button.more{width:48px;flex-shrink:0;padding:0;font-size:24px;line-height:1}
+.menu{display:flex;flex-direction:column;gap:8px;margin:8px 0 0 auto;width:140px;padding:8px;border:1px solid var(--line);border-radius:20px;background:var(--bg)}
+button.danger{color:#a12a20;border-color:#a12a20}
+button.danger.solid{background:#a12a20;color:#fff}
+.peek{margin-top:6px;white-space:pre-wrap;overflow-wrap:anywhere}
+#title{width:100%;font-size:22px;font-weight:700;min-height:56px}
+.headline{font-size:22px;margin:10px 0 4px;overflow-wrap:anywhere}
+.sketch{display:block;width:100%;max-height:420px;object-fit:contain;background:#fff;border:1px solid var(--line);border-radius:16px;box-sizing:border-box;margin-bottom:8px}
+.ex{display:flex;align-items:flex-start;gap:8px}
+.ex label{flex:1;min-width:0;display:flex;gap:12px;align-items:center;min-height:48px;overflow-wrap:anywhere}
+.ex label span{min-width:0}
+.ex input{width:24px;height:24px;min-height:0;flex-shrink:0;accent-color:var(--accent)}
+.bar{height:10px;border-radius:5px;background:#f0e4d0;margin:4px 0 12px;overflow:hidden}
+.bar div{height:100%;background:var(--accent)}
+.stack>label>input,.stack>label>select{display:block;width:100%;margin-top:6px}
+#exMsg,#planMsg{font-weight:700;color:var(--accent)}
+.choice{border:2px solid var(--line);border-radius:16px;padding:12px}
+.choice label{display:flex;gap:10px;align-items:center;min-height:48px;font-weight:700}
+.choice input{width:22px;height:22px;min-height:0;flex-shrink:0;accent-color:var(--accent)}
+#bkMsg,#rsMsg{font-weight:700;color:var(--accent)}
+#msg{min-height:20px;font-weight:700;color:var(--accent)}
+</style>
+</head>
+<body>
+<main>
+<section id="home">
+  <div><div class="sub" id="todayText"></div><h1>今天也辛苦了 ✨</h1></div>
+  <div class="warn stack" id="testWarn" hidden><div>在這台裝置完成<b>備份和還原測試</b>前，請只填假資料。</div><button type="button" id="testDone">我已測試成功</button></div>
+  <div class="warn" id="storeWarn" hidden>這個瀏覽器目前無法儲存資料，關閉頁面後內容會消失。</div>
+  <div id="saved" role="status"></div>
+  <div class="card" id="summary"></div>
+  <button class="main" id="open">寫今天的紀錄</button>
+</section>
+<section id="edit" hidden>
+  <button id="back">← 返回</button>
+  <h1 id="editTitle">寫紀錄</h1>
+  <label class="stack"><span><b>日期</b> <span class="sub">同一天只會有一篇</span></span><input type="date" id="date"></label>
+  <div class="warn stack" id="ask" hidden><b>還有內容沒儲存，要放棄這些修改嗎？</b><button id="keep">繼續編輯</button><button id="drop">放棄修改</button></div>
+  <div id="form" class="stack">
+    <fieldset><legend>心情（選 1 個）</legend><div id="moods"></div></fieldset>
+    <fieldset><legend>📝 作業項目</legend>
+      <div class="stack"><button class="sun" id="carry">↪ 帶入上次未完成的項目</button><div class="sub" id="carryMsg" role="status"></div></div>
+      <div id="tasks" style="margin-top:8px"></div>
+      <button id="add" style="width:100%">＋ 新增作業項目</button>
+    </fieldset>
+    <fieldset><legend>🎨 今日速寫 <span class="sub">1 張，可以不上傳</span></legend>
+      <img class="sketch" id="preview" alt="今日速寫預覽" hidden>
+      <input type="file" id="file" accept="image/*" hidden>
+      <div class="stack">
+        <button type="button" class="sun" id="upload">上傳速寫</button>
+        <div id="picBtns" class="stack" hidden><button type="button" id="replace">更換圖片</button><button type="button" class="danger" id="removePic">移除圖片</button></div>
+        <div class="warn stack" id="picAsk" hidden><b id="picAskText"></b><button type="button" id="picNo">取消</button><button type="button" class="main" id="picYes"></button></div>
+        <div class="sub" id="picMsg" role="status"></div>
+      </div>
+    </fieldset>
+    <label><div class="label">大標題 <span class="sub">可以不填</span></div><input id="title" maxlength="40" placeholder="用一句話形容今天" enterkeyhint="next"></label>
+    <label><div class="label">今日心得</div><textarea id="note" placeholder="今天過得如何？"></textarea></label>
+    <div id="msg" role="alert"></div>
+    <button class="main" id="save">儲存</button>
+  </div>
+</section>
+<section id="history" hidden>
+  <h1>舊紀錄</h1>
+  <div id="histMsg" role="status" style="font-weight:700"></div>
+  <div id="list" class="stack"></div>
+</section>
+<section id="exercise" hidden>
+  <div><h1>運動規劃</h1><div class="sub" id="weekText"></div></div>
+  <div id="exMsg" role="status"></div>
+  <div class="warn" id="progress" style="font-weight:700"></div>
+  <div id="plans" class="stack"></div>
+  <button type="button" class="main" id="newPlan">＋ 新增運動計畫</button>
+  <form class="card stack" id="planForm" hidden novalidate>
+    <b id="planTitle"></b>
+    <label>星期<select id="planDay"></select></label>
+    <label>運動名稱<input id="planName" maxlength="30" placeholder="例如：快走"></label>
+    <label>運動時間（分鐘）<input id="planMin" type="number" inputmode="numeric" min="1" max="600" step="1"></label>
+    <div id="planMsg" role="alert"></div>
+    <button class="main">儲存計畫</button><button type="button" id="planCancel">取消</button>
+  </form>
+  <div class="sub">每週自動重複，打勾紀錄每週分開計算。還沒到的日子不能打勾。</div>
+  <div class="card"><b>📊 運動統計</b><div id="stats" style="margin-top:12px"></div><div class="sub">每週從星期一開始。新計畫從建立那天起算。</div></div>
+</section>
+<section id="backup" hidden>
+  <h1>備份與還原</h1>
+  <div class="card stack">
+    <b id="lastBk"></b>
+    <div>備份包含日記、速寫和運動紀錄。檔案沒有加密，請放在只有你能取用的地方，不要上傳到 GitHub。</div>
+    <button type="button" class="main" id="export">匯出備份檔</button>
+    <div id="bkMsg" role="status"></div>
+  </div>
+  <div class="card stack">
+    <b>從備份還原</b>
+    <div>選好檔案後會先讓你確認，按「確認還原」前不會更動資料。</div>
+    <input type="file" id="bkFile" accept=".json,application/json" hidden>
+    <button type="button" id="choose">選擇備份檔</button>
+    <div id="rsMsg" role="status"></div>
+    <div id="restore" class="stack"></div>
+  </div>
+</section>
+<nav id="nav" aria-label="主選單"><button id="navHome">今天</button><button id="navHist">舊紀錄</button><button id="navEx">運動</button><button id="navBk">備份</button></nav>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const MOODS=[['😄','開心'],['🥰','滿足'],['😌','平靜'],['😐','平淡'],['😴','疲累'],['😰','焦慮'],['😢','難過'],['😔','憂鬱'],['😠','生氣'],['🤩','興奮']];
+const STATES=['未開始','進行中','已完成'];
+const pad=n=>String(n).padStart(2,'0');
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
+let db=null,memory={},draft,current,dirty=false,pending=null;
+
+function openDB(){return new Promise(res=>{try{
+  const r=indexedDB.open('daily-diary',2);
+  r.onupgradeneeded=()=>{const d=r.result;
+    if(!d.objectStoreNames.contains('days'))d.createObjectStore('days',{keyPath:'date'});
+    if(!d.objectStoreNames.contains('plans'))d.createObjectStore('plans',{keyPath:'id'});
+  };
+  r.onblocked=()=>{$('saved').textContent='請關閉其他開著日記的分頁，這個頁面才能更新。'};
+  r.onsuccess=()=>{r.result.onversionchange=()=>r.result.close();$('saved').textContent='';res(r.result)};
+  r.onerror=()=>res(null);
+}catch(e){res(null)}})}
+function tx(mode,fn){return new Promise((res,rej)=>{
+  const t=db.transaction('days',mode),r=fn(t.objectStore('days'));
+  t.oncomplete=()=>res(r.result);t.onerror=t.onabort=()=>rej(t.error);
+})}
+const getAll=async()=>db?tx('readonly',s=>s.getAll()):Object.values(memory);
+const get=async d=>db?tx('readonly',s=>s.get(d)):memory[d];
+const put=async v=>{if(db)await tx('readwrite',s=>s.put(v));else memory[v.date]=structuredClone(v)};
+
+const del=async d=>{if(db)await tx('readwrite',s=>s.delete(d));else delete memory[d]};
+
+function el(tag,text,cls){const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;return e}
+const moodLabel=m=>{const f=MOODS.find(x=>x[1]===m);return f?f[0]+' '+f[1]:'未選擇'};
+
+let from='home';
+function view(name){
+  ['home','edit','history','exercise','backup'].forEach(v=>$(v).hidden=v!==name);
+  $('nav').hidden=name==='edit';
+  [['navHome','home'],['navHist','history'],['navEx','exercise'],['navBk','backup']].forEach(([id,v])=>v===name?$(id).setAttribute('aria-current','page'):$(id).removeAttribute('aria-current'));
+}
+async function openEdit(date,origin){
+  try{await load(date)}catch(e){alertIn(origin,'讀取失敗，請重新整理頁面。');return}
+  from=origin;$('saved').textContent='';$('histMsg').textContent='';view('edit');scrollTo(0,0);
+}
+const alertIn=(origin,text)=>$(origin==='history'?'histMsg':'saved').textContent=text;
+const dateLabel=d=>d+'（'+'日一二三四五六'[new Date(d+'T00:00').getDay()]+'）';
+function detail(r){
+  const box=el('div');box.append(el('p','作業項目','label'));
+  if(!r.tasks.length)box.append(el('p','沒有作業項目'));
+  r.tasks.forEach(t=>{const row=el('div',null,'row');row.append(el('span',t.name),el('span',t.state));box.append(row)});
+  box.append(el('p','心得','label'),el('div',r.note||'尚未填寫','text'));return box;
+}
+function btn(text,fn,cls){const b=el('button',text,cls);b.type='button';b.onclick=fn;return b}
+function card(r){
+  const c=el('div',null,'card');
+  const done=r.tasks.filter(t=>t.state==='已完成').length;
+  const info=el('div',r.tasks.length?'作業 '+r.tasks.length+' 項，完成 '+done+' 項':'沒有作業項目','sub');
+  const peek=el('div',r.note,'peek');
+  const more=detail(r);more.hidden=true;
+  const see=btn('查看',()=>{more.hidden=!more.hidden;peek.hidden=!more.hidden;see.textContent=more.hidden?'查看':'收合';see.setAttribute('aria-expanded',!more.hidden)});
+  see.setAttribute('aria-expanded','false');
+  const acts=el('div',null,'acts'),confirmBox=el('div',null,'warn stack');confirmBox.hidden=true;confirmBox.style.marginTop='10px';
+  const menu=el('div',null,'menu');menu.hidden=true;
+  const dots=btn('⋯',()=>{const show=menu.hidden;closeMenus();menu.hidden=!show;dots.setAttribute('aria-expanded',show)},'more');
+  dots.setAttribute('aria-label',r.date+' 更多選項');dots.setAttribute('aria-expanded','false');
+  const remove=btn('刪除',()=>{closeMenus();confirmBox.hidden=false;dots.hidden=true;cancel.focus()},'danger');
+  const cancel=btn('取消',()=>{confirmBox.hidden=true;dots.hidden=false;dots.focus()});
+  const yes=btn('確定刪除',async()=>{
+    yes.disabled=true;
+    try{await del(r.date);await showHistory();$('histMsg').textContent='已刪除 '+r.date+' 的紀錄'}
+    catch(e){yes.disabled=false;$('histMsg').textContent='刪除失敗，請再試一次。';scrollTo(0,0)}
+  },'danger solid');
+  confirmBox.append(el('b','確定刪除 '+dateLabel(r.date)+' 的紀錄嗎？'+(r.sketch?'速寫也會一起刪除。':'')+'刪除後無法復原。'),cancel,yes);
+  acts.append(see);menu.append(btn('修改',()=>openEdit(r.date,'history')),remove);
+  const top=el('div',null,'top'),title=el('div');title.append(el('b',dateLabel(r.date)+'・'+moodLabel(r.mood)),info);top.append(title,dots);
+  c.append(top,menu,...(r.title?[el('h2',r.title,'headline')]:[]),...(r.sketch?[picture(r.sketch,r.date)]:[]),peek,more,acts,confirmBox);
+  return c;
+}
+function closeMenus(){
+  document.querySelectorAll('.menu').forEach(m=>m.hidden=true);
+  document.querySelectorAll('button.more').forEach(b=>b.setAttribute('aria-expanded','false'));
+}
+document.addEventListener('click',e=>{if(!e.target.closest('.menu,button.more'))closeMenus()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenus()});
+async function showHistory(){
+  $('histMsg').textContent='';view('history');
+  let all;
+  try{all=await getAll()}catch(e){$('list').replaceChildren();$('histMsg').textContent='讀取失敗，請重新整理頁面。';return}
+  all.sort((a,b)=>b.date.localeCompare(a.date));
+  $('list').replaceChildren(...(all.length?all.map(card):[el('div','還沒有任何紀錄。到「今天」寫下第一篇吧。','card')]));
+}
+async function showHome(){
+  view('home');
+  $('todayText').textContent=new Date().toLocaleDateString('zh-TW',{month:'long',day:'numeric',weekday:'long'});
+  const box=$('summary');let r;
+  try{r=await get(today())}catch(e){box.textContent='讀取失敗，請重新整理頁面。';return}
+  box.replaceChildren();
+  $('open').textContent=r?'修改今天的紀錄':'寫今天的紀錄';
+  if(!r){box.append(el('div','今天還沒有紀錄。按下面的按鈕開始寫。'));return}
+  if(r.title)box.append(el('h2',r.title,'headline'));
+  if(r.sketch)box.append(picture(r.sketch,r.date));
+  box.append(el('b','今天的心情'),el('p',moodLabel(r.mood)),detail(r));
+}
+
+function picture(src,date){const i=el('img',null,'sketch');i.src=src;i.alt=date+' 的速寫';return i}
+function renderPic(){
+  const has=!!draft.sketch;
+  $('preview').hidden=!has;has?$('preview').src=draft.sketch:$('preview').removeAttribute('src');
+  $('upload').hidden=has;$('picBtns').hidden=!has;$('picAsk').hidden=true;
+}
+// 長邊最多 1600 像素，轉成 JPEG；透明背景補白
+async function shrink(file){
+  const url=URL.createObjectURL(file);
+  try{
+    const img=new Image();img.src=url;await img.decode();
+    const k=Math.min(1,1600/Math.max(img.naturalWidth,img.naturalHeight));
+    const c=document.createElement('canvas');
+    c.width=Math.max(1,Math.round(img.naturalWidth*k));c.height=Math.max(1,Math.round(img.naturalHeight*k));
+    const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);g.drawImage(img,0,0,c.width,c.height);
+    const out=c.toDataURL('image/jpeg',0.85);
+    if(!out.startsWith('data:image/jpeg'))throw new Error('encode');
+    return out;
+  }finally{URL.revokeObjectURL(url)}
+}
+const pick=()=>{$('file').value='';$('file').click()};
+function askPic(remove){
+  $('picAskText').textContent=remove?'確定移除這張速寫嗎？':'確定更換這張速寫嗎？';
+  $('picYes').textContent=remove?'確定移除':'選擇新圖片';
+  $('picYes').onclick=()=>{
+    renderPic();
+    if(remove){draft.sketch='';dirty=true;renderPic();$('picMsg').textContent='已移除，按下面的「儲存」後才會生效。'}else pick();
+  };
+  $('picBtns').hidden=true;$('picAsk').hidden=false;$('picNo').focus();
+}
+$('upload').onclick=pick;
+$('replace').onclick=()=>askPic(false);
+$('removePic').onclick=()=>askPic(true);
+$('picNo').onclick=renderPic;
+$('file').onchange=async()=>{
+  const f=$('file').files[0];if(!f)return;
+  const target=draft;$('save').disabled=true;$('picMsg').textContent='圖片處理中…';
+  try{
+    const out=await shrink(f);
+    if(target===draft){draft.sketch=out;dirty=true;renderPic();$('picMsg').textContent='圖片已加入，記得按下面的「儲存」。'}
+  }catch(e){if(target===draft)$('picMsg').textContent='這張圖片無法讀取，請改選 JPG 或 PNG 圖片。原本的內容沒有改變。'}
+  finally{$('save').disabled=false}
+};
+
+function renderMoods(){
+  $('moods').replaceChildren(...MOODS.map(([e,n])=>{
+    const b=el('button');b.type='button';b.append(e,document.createElement('br'),n);
+    b.setAttribute('aria-pressed',draft.mood===n);
+    b.onclick=()=>{draft.mood=draft.mood===n?'':n;dirty=true;renderMoods()};return b}));
+}
+function renderTasks(){
+  $('tasks').replaceChildren(...draft.tasks.map((t,i)=>{
+    const row=el('div',null,'task'),name=el('input'),sel=el('select'),del=el('button','×');
+    name.id='task-name-'+i;name.value=t.name;name.placeholder='作業名稱';name.setAttribute('aria-label','作業名稱');
+    name.oninput=()=>{t.name=name.value;dirty=true};
+    sel.id='task-state-'+i;sel.setAttribute('aria-label','進度');STATES.forEach(s=>sel.append(el('option',s)));sel.value=t.state;
+    sel.onchange=()=>{t.state=sel.value;dirty=true};
+    del.type='button';del.setAttribute('aria-label','移除此項目');
+    del.onclick=()=>{draft.tasks.splice(i,1);dirty=true;renderTasks()};
+    row.append(name,sel,del);return row}));
+}
+async function load(date){
+  const r=await get(date);
+  closeAsk();current=date;draft=r?{title:'',sketch:'',...structuredClone(r)}:{date,mood:'',tasks:[],title:'',note:'',sketch:''};dirty=false;
+  $('date').value=date;$('note').value=draft.note;$('title').value=draft.title;$('msg').textContent='';$('carryMsg').textContent='';
+  $('editTitle').textContent=r?'修改紀錄':'寫紀錄';renderMoods();renderTasks();renderPic();$('picMsg').textContent='';
+}
+function guard(action){
+  if(!dirty){action();return}
+  pending=action;$('ask').hidden=false;$('form').hidden=true;$('date').value=current;$('ask').scrollIntoView({block:'center'});
+}
+function closeAsk(){$('ask').hidden=true;$('form').hidden=false}
+$('keep').onclick=closeAsk;
+$('drop').onclick=()=>{closeAsk();dirty=false;pending()};
+$('open').onclick=()=>openEdit(today(),'home');
+$('navHome').onclick=()=>{$('saved').textContent='';showHome();scrollTo(0,0)};
+$('navHist').onclick=()=>{showHistory();scrollTo(0,0)};
+$('back').onclick=()=>guard(()=>{dirty=false;from==='history'?showHistory():showHome()});
+$('date').onchange=()=>{const d=$('date').value;
+  if(!d||d>today()){$('date').value=current;$('msg').textContent='請選今天或之前的日期。';return}
+  guard(()=>load(d))};
+$('title').oninput=()=>{draft.title=$('title').value;dirty=true};
+$('title').onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();$('note').focus()}};
+$('note').oninput=()=>{draft.note=$('note').value;dirty=true};
+$('add').onclick=()=>{draft.tasks.push({name:'',state:'未開始'});dirty=true;renderTasks();$('task-name-'+(draft.tasks.length-1)).focus()};
+$('carry').onclick=async()=>{
+  const prev=(await getAll()).filter(r=>r.date<current).sort((a,b)=>b.date.localeCompare(a.date))[0];
+  if(!prev){$('carryMsg').textContent='找不到這天之前的紀錄。';return}
+  const have=new Set(draft.tasks.map(t=>t.name.trim()));
+  const add=prev.tasks.filter(t=>t.state!=='已完成'&&!have.has(t.name.trim()));
+  add.forEach(t=>draft.tasks.push({...t}));
+  if(add.length){dirty=true;renderTasks()}
+  $('carryMsg').textContent=add.length?'已從 '+prev.date+' 帶入 '+add.length+' 項，記得按儲存。':prev.date+' 沒有需要帶入的新項目。';
+};
+$('save').onclick=async()=>{
+  const rec={date:current,title:draft.title.trim(),mood:draft.mood,note:draft.note,sketch:draft.sketch,tasks:draft.tasks.map(t=>({name:t.name.trim(),state:t.state})).filter(t=>t.name)};
+  if(!rec.title&&!rec.mood&&!rec.note.trim()&&!rec.sketch&&!rec.tasks.length){$('msg').textContent='請至少選心情、填寫作業、標題或心得，或上傳速寫。';return}
+  $('save').disabled=true;
+  try{await put(rec);dirty=false;await (from==='history'?showHistory():showHome());alertIn(from,'✅ 已儲存 '+rec.date+' 的紀錄');scrollTo(0,0)}
+  catch(e){$('msg').textContent='儲存失敗。請先不要關閉頁面，確認裝置空間後再試一次。'}
+  finally{$('save').disabled=false}
+};
+addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});
+// 運動
+const WEEK=['星期一','星期二','星期三','星期四','星期五','星期六','星期日'];
+let memPlans={},editing=null;
+const plansAll=async()=>db?new Promise((res,rej)=>{const t=db.transaction('plans'),r=t.objectStore('plans').getAll();t.oncomplete=()=>res(r.result);t.onabort=()=>rej(t.error)}):structuredClone(Object.values(memPlans));
+// 一次交易寫入多筆，避免只改到一半
+const plansWrite=async(puts,dels=[])=>{
+  if(!db){puts.forEach(p=>memPlans[p.id]=structuredClone(p));dels.forEach(i=>delete memPlans[i]);return}
+  await new Promise((res,rej)=>{const t=db.transaction('plans','readwrite'),o=t.objectStore('plans');puts.forEach(p=>o.put(p));dels.forEach(i=>o.delete(i));t.oncomplete=res;t.onabort=()=>rej(t.error)});
+};
+const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const addDays=(s,n)=>{const d=new Date(s+'T12:00');d.setDate(d.getDate()+n);return iso(d)};
+const monday=()=>addDays(today(),-((new Date().getDay()+6)%7));
+const short=d=>Number(d.slice(5,7))+'/'+Number(d.slice(8));
+function occurrences(all,start){
+  return all.map(p=>({p,date:addDays(start,p.day)}))
+    .filter(o=>o.p.done.includes(o.date)||(o.date>=o.p.created&&(!o.p.ended||o.date<o.p.ended)))
+    .sort((a,b)=>a.date.localeCompare(b.date)||a.p.name.localeCompare(b.p.name));
+}
+const hasHistory=p=>p.done.length>0||addDays(p.created,(p.day-(new Date(p.created+'T12:00').getDay()+6)%7+7)%7)<today();
+function openForm(p){
+  editing=p;$('planTitle').textContent=p?'修改運動計畫':'新增運動計畫';
+  $('planDay').value=p?p.day:(new Date().getDay()+6)%7;$('planName').value=p?p.name:'';$('planMin').value=p?p.minutes:30;
+  $('planMsg').textContent='';$('exMsg').textContent='';$('planForm').hidden=false;$('newPlan').hidden=true;$('planName').focus();
+}
+function closeForm(){editing=null;$('planForm').hidden=true;$('newPlan').hidden=false}
+async function removePlan(p){
+  if(hasHistory(p))await plansWrite([{...p,ended:today()}]);else await plansWrite([],[p.id]);
+}
+function planCard(o,all){
+  const {p,date}=o,c=el('div',null,'card'),row=el('div',null,'ex'),lab=el('label'),box=el('input'),text=el('span');
+  const active=!p.ended;
+  box.type='checkbox';box.id='done-'+p.id;box.checked=p.done.includes(date);box.disabled=date>today();
+  box.onchange=async()=>{
+    box.disabled=true;
+    const next={...p,done:box.checked?[...new Set([...p.done,date])]:p.done.filter(d=>d!==date)};
+    try{await plansWrite([next]);await renderEx()}catch(e){await renderEx();$('exMsg').textContent='儲存失敗，請再試一次。'}
+  };
+  text.append(el('b',WEEK[p.day]+' '+short(date)),el('br'),el('span',p.name+' '+p.minutes+' 分鐘'));
+  if(!active)text.append(el('br'),el('span','舊版或已移除的計畫','sub'));
+  lab.append(box,text);row.append(lab);c.append(row);
+  if(active){
+    const menu=el('div',null,'menu');menu.hidden=true;
+    const dots=btn('⋯',()=>{const show=menu.hidden;closeMenus();menu.hidden=!show;dots.setAttribute('aria-expanded',show)},'more');
+    dots.setAttribute('aria-label',p.name+' 更多選項');dots.setAttribute('aria-expanded','false');
+    const ask=el('div',null,'warn stack');ask.hidden=true;ask.style.marginTop='10px';
+    const no=btn('取消',()=>{ask.hidden=true;dots.hidden=false});
+    ask.append(el('b','確定移除「'+p.name+'」嗎？之後不再重複，過去的統計會保留。'),no,btn('確定移除',async()=>{
+      try{await removePlan(p);if(editing&&editing.id===p.id)closeForm();await renderEx();$('exMsg').textContent='已移除計畫'}catch(e){$('exMsg').textContent='移除失敗，請再試一次。'}
+    },'danger solid'));
+    menu.append(btn('修改',()=>{closeMenus();openForm(p)}),btn('刪除',()=>{closeMenus();ask.hidden=false;dots.hidden=true;no.focus()},'danger'));
+    row.append(dots);c.append(menu,ask);
+  }
+  return c;
+}
+async function renderEx(){
+  let all;try{all=await plansAll()}catch(e){$('exMsg').textContent='讀取失敗，請重新整理頁面。';return}
+  const start=monday(),week=occurrences(all,start);
+  $('weekText').textContent='本週 '+short(start)+'～'+short(addDays(start,6))+'・每週重複';
+  const done=week.filter(o=>o.p.done.includes(o.date)).length;
+  $('progress').textContent=week.length?'本週已完成 '+done+'／'+week.length+' 項 💪':'本週目前沒有排定的運動';
+  const nodes=week.map(o=>planCard(o,all));
+  // 星期已過的新計畫：先列出下週日期，仍可修改或刪除
+  const later=occurrences(all,addDays(start,7)).filter(o=>!o.p.ended&&!week.some(w=>w.p.id===o.p.id));
+  if(later.length)nodes.push(el('b','下週開始'),...later.map(o=>planCard(o,all)));
+  $('plans').replaceChildren(...(nodes.length?nodes:[el('div','還沒有運動計畫。按下面的按鈕新增第一項。','card')]));
+  $('stats').replaceChildren(...['本週','上週','兩週前'].flatMap((name,i)=>{
+    const list=occurrences(all,addDays(start,-7*i)),n=list.filter(o=>o.p.done.includes(o.date)).length;
+    const mins=list.filter(o=>o.p.done.includes(o.date)).reduce((a,o)=>a+o.p.minutes,0);
+    const row=el('div',null,'row'),bar=el('div',null,'bar'),fill=el('div');
+    row.append(el('span',name),el('span',list.length?'完成 '+n+'／'+list.length+' 項・'+mins+' 分鐘':'沒有計畫'));
+    fill.style.width=(list.length?n/list.length*100:0)+'%';bar.append(fill);bar.setAttribute('aria-hidden','true');return [row,bar];
+  }));
+}
+WEEK.forEach((w,i)=>{const o=el('option',w);o.value=i;$('planDay').append(o)});
+$('newPlan').onclick=()=>openForm(null);
+$('planCancel').onclick=closeForm;
+$('navEx').onclick=async()=>{$('exMsg').textContent='';view('exercise');scrollTo(0,0);await renderEx()};
+$('planForm').onsubmit=async e=>{
+  e.preventDefault();
+  const day=Number($('planDay').value),name=$('planName').value.trim(),minutes=Number($('planMin').value);
+  if(!name){$('planMsg').textContent='請輸入運動名稱。';return}
+  if(!Number.isInteger(minutes)||minutes<1||minutes>600){$('planMsg').textContent='時間請填 1 到 600 的整數。';return}
+  const old=editing,make=()=>({id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),day,name,minutes,created:today(),ended:null,done:[]});
+  const submit=e.submitter;if(submit)submit.disabled=true;
+  try{
+    if(old&&old.day===day&&old.name===name&&old.minutes===minutes){}
+    else if(!old)await plansWrite([make()]);
+    else if(!hasHistory(old))await plansWrite([{...old,day,name,minutes}]);
+    else{
+      // 保留過去紀錄：舊版到今天為止，新版從今天起算
+      const next=make(),t=today(),prev={...old,ended:t,done:[...old.done]};
+      if(old.day===day&&prev.done.includes(t)){prev.done=prev.done.filter(d=>d!==t);next.done=[t]}
+      await plansWrite([prev,next]);
+    }
+    closeForm();await renderEx();$('exMsg').textContent='✅ 已儲存運動計畫';scrollTo(0,0);
+  }catch(err){$('planMsg').textContent='儲存失敗，請再試一次。'}
+  finally{if(submit)submit.disabled=false}
+};
+// 備份與還原
+let dl=null,inClaude=!!window.claude?.use;
+if(inClaude)window.claude.use('downloads').then(d=>dl=d).catch(()=>{});
+const lastBackup=()=>{try{return localStorage.getItem('diary-last-backup')}catch(e){return null}};
+function showLast(){const v=lastBackup();$('lastBk').textContent='上次匯出：'+(v?new Date(v).toLocaleString('zh-TW',{dateStyle:'medium',timeStyle:'short'}):'沒有紀錄')}
+$('navBk').onclick=()=>{view('backup');scrollTo(0,0);showLast();$('bkMsg').textContent='';resetRestore()};
+$('export').onclick=async()=>{
+  $('export').disabled=true;$('bkMsg').textContent='準備中…';
+  try{
+    const days=await getAll(),plans=await plansAll();
+    if(!days.length&&!plans.length){$('bkMsg').textContent='目前沒有可以備份的資料。';return}
+    const now=new Date(),name='diary-backup-'+today()+'-'+pad(now.getHours())+pad(now.getMinutes())+'.json';
+    const text=JSON.stringify({app:'daily-diary',version:1,exportedAt:now.toISOString(),days,plans});
+    let result='已匯出 ';
+    if(inClaude){
+      if(!dl){$('bkMsg').textContent='這個畫面無法儲存檔案。請用瀏覽器開啟後再試。';return}
+      await dl.save({filename:name,data:text});
+    }else{
+      const file=new File([text],name,{type:'application/json'});
+      if(navigator.canShare?.({files:[file]})){
+        try{await navigator.share({files:[file]})}
+        catch(e){
+          if(e.name!=='NotAllowedError')throw e;
+          $('bkMsg').textContent='檔案準備好了，請按下面的按鈕儲存。';
+          const again=btn('儲存備份檔',async()=>{
+            try{await navigator.share({files:[file]});try{localStorage.setItem('diary-last-backup',now.toISOString())}catch(e){}showLast();$('bkMsg').textContent='已匯出，請確認檔案真的有存好。'}
+            catch(e){$('bkMsg').append(el('div','沒有完成儲存。'))}
+          },'sun');
+          $('bkMsg').append(el('br'),again);return;
+        }
+      }
+      else{const a=el('a');a.href=URL.createObjectURL(file);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),60000);result='已開始下載 '}
+    }
+    try{localStorage.setItem('diary-last-backup',now.toISOString())}catch(e){}
+    showLast();$('bkMsg').textContent=result+days.length+' 篇日記、'+plans.length+' 筆運動資料。請確認檔案真的有存好。';
+  }catch(e){$('bkMsg').textContent=e&&(e.code==='declined'||e.name==='AbortError')?'已取消，沒有完成匯出。':'匯出失敗，請再試一次。'}
+  finally{$('export').disabled=false}
+};
+const isDate=v=>typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v);
+const isText=v=>typeof v==='string';
+function must(ok){if(!ok)throw new Error('bad backup')}
+// 只接受已知欄位，圖片只能是檔案內嵌的 JPEG
+function cleanDay(r){
+  must(r&&isDate(r.date)&&Array.isArray(r.tasks));
+  const o={date:r.date,title:r.title??'',mood:r.mood??'',note:r.note??'',sketch:r.sketch??'',tasks:r.tasks.map(t=>{must(t&&isText(t.name)&&STATES.includes(t.state));return{name:t.name,state:t.state}})};
+  must(isText(o.title)&&isText(o.mood)&&isText(o.note)&&isText(o.sketch)&&(!o.sketch||/^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(o.sketch)));
+  return o;
+}
+function cleanPlan(p){
+  must(p&&isText(p.id)&&p.id&&Number.isInteger(p.day)&&p.day>=0&&p.day<7&&isText(p.name)&&Number.isInteger(p.minutes)&&p.minutes>0&&isDate(p.created)&&(p.ended===null||isDate(p.ended))&&Array.isArray(p.done)&&p.done.every(isDate));
+  return{id:p.id,day:p.day,name:p.name,minutes:p.minutes,created:p.created,ended:p.ended,done:[...p.done].sort()};
+}
+const planKey=list=>JSON.stringify(list.map(cleanPlan).sort((a,b)=>a.id.localeCompare(b.id)));
+async function applyRestore(days,plans){ // plans 為 null 表示保留目前的運動資料
+  if(!db){days.forEach(d=>memory[d.date]=structuredClone(d));if(plans){memPlans={};plans.forEach(p=>memPlans[p.id]=structuredClone(p))}return}
+  await new Promise((res,rej)=>{
+    const t=db.transaction(['days','plans'],'readwrite');t.oncomplete=res;t.onabort=()=>rej(t.error);
+    days.forEach(d=>t.objectStore('days').put(d));
+    if(plans){const o=t.objectStore('plans');o.clear();plans.forEach(p=>o.put(p))}
+  });
+}
+let restoreRun=0;
+function resetRestore(){restoreRun++;$('restore').replaceChildren();$('rsMsg').textContent='';$('choose').hidden=false}
+function choices(group,legend,options){
+  const box=el('fieldset',null,'choice stack');box.append(el('legend',legend));
+  options.forEach(([value,text,content])=>{
+    const wrap=el('div'),lab=el('label'),input=el('input');input.type='radio';input.name=group;input.value=value;input.id=group+'-'+value;
+    lab.append(input,el('span',text));wrap.append(lab,content);box.append(wrap);
+  });
+  return box;
+}
+function preview(r){
+  const d=el('div',null,'sub');d.append(el('div','心情：'+moodLabel(r.mood)));
+  if(r.title)d.append(el('h2',r.title,'headline'));
+  if(r.sketch)d.append(picture(r.sketch,r.date));
+  d.append(detail(r));return d;
+}
+$('choose').onclick=()=>{$('bkFile').value='';$('bkFile').click()};
+$('bkFile').onchange=async()=>{
+  const f=$('bkFile').files[0];if(!f)return;
+  resetRestore();const run=restoreRun;
+  let data,days,plans;
+  try{
+    data=JSON.parse(await f.text());
+    must(data&&data.app==='daily-diary'&&data.version===1&&Array.isArray(data.days)&&Array.isArray(data.plans));
+    days=data.days.map(cleanDay);plans=data.plans.map(cleanPlan);
+    must(new Set(days.map(d=>d.date)).size===days.length&&new Set(plans.map(p=>p.id)).size===plans.length);
+  }catch(e){if(run===restoreRun)$('rsMsg').textContent='無法讀取這個檔案。請選這個 APP 匯出的備份檔，目前資料沒有改變。';return}
+  let mine,myPlans;
+  try{mine=new Map((await getAll()).map(d=>[d.date,cleanDay(d)]));myPlans=await plansAll()}
+  catch(e){$('rsMsg').textContent='讀取目前資料失敗，沒有進行還原。';return}
+  if(run!==restoreRun)return;
+  const added=days.filter(d=>!mine.has(d.date));
+  const clashes=days.filter(d=>mine.has(d.date)&&JSON.stringify(mine.get(d.date))!==JSON.stringify(d)).sort((a,b)=>b.date.localeCompare(a.date));
+  const same=days.length-added.length-clashes.length;
+  const planClash=plans.length>0&&myPlans.length>0&&planKey(plans)!==planKey(myPlans);
+  const addPlans=plans.length>0&&myPlans.length===0;
+  const box=$('restore');
+  box.append(el('div','備份裡有 '+days.length+' 篇日記：新增 '+added.length+' 篇，相同 '+same+' 篇，內容不同 '+clashes.length+' 篇。目前有、備份裡沒有的日記會保留。'));
+  if(addPlans)box.append(el('div','會加入備份中的運動資料。'));
+  if(!added.length&&!clashes.length&&!addPlans&&!planClash){box.append(el('b','沒有需要還原的內容。'));return}
+  clashes.forEach(d=>box.append(choices('day-'+d.date,dateLabel(d.date)+' 要保留哪一份？',[['mine','保留目前的',preview(mine.get(d.date))],['file','改用備份的',preview(d)]])));
+  if(planClash){
+    const list=a=>el('div',a.filter(p=>!p.ended).map(p=>WEEK[p.day]+' '+p.name+' '+p.minutes+' 分鐘').join('、')||'沒有使用中的計畫','sub');
+    const count=a=>a.reduce((n,p)=>n+p.done.length,0);
+    box.append(choices('plans','運動資料不同，要保留哪一份？（整份選擇，包含打勾紀錄）',[['mine','保留目前的（打勾 '+count(myPlans)+' 次）',list(myPlans)],['file','改用備份的（打勾 '+count(plans)+' 次）',list(plans)]]));
+  }
+  const picked=g=>box.querySelector('input[name="'+g+'"]:checked')?.value;
+  const err=el('div',null,'warn');err.hidden=true;err.setAttribute('role','alert');
+  const go=btn('確認還原',async()=>{
+    if(clashes.some(d=>!picked('day-'+d.date))||(planClash&&!picked('plans'))){err.textContent='還有項目沒有選擇要保留哪一份。';err.hidden=false;return}
+    const write=[...added,...clashes.filter(d=>picked('day-'+d.date)==='file')];
+    const newPlans=addPlans||(planClash&&picked('plans')==='file')?plans:null;
+    go.disabled=true;
+    try{await applyRestore(write,newPlans);closeForm();resetRestore();$('rsMsg').textContent='✅ 還原完成：寫入 '+write.length+' 篇日記'+(newPlans?'，並還原運動資料':'')+'。'}
+    catch(e){go.disabled=false;err.textContent='還原失敗，目前資料沒有改變。請確認裝置空間後再試。';err.hidden=false}
+  },'main');
+  box.append(err,go,btn('取消',()=>{resetRestore();$('rsMsg').textContent='已取消，資料沒有改變。'}));
+};
+const flag=()=>{try{return localStorage.getItem('diary-tested')}catch(e){return null}};
+$('testWarn').hidden=!!flag();
+$('testDone').onclick=()=>{try{localStorage.setItem('diary-tested','1')}catch(e){}$('testWarn').hidden=true};
+navigator.storage?.persist?.().catch(()=>{});
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+(async()=>{db=await openDB();$('storeWarn').hidden=!!db;showHome()})();
+</script>
+</body>
+</html>
